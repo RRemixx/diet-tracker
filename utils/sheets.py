@@ -34,9 +34,15 @@ def _get_client():
 
 
 def _get_sheet():
-    """Return the Google Sheet workbook."""
-    client = _get_client()
-    return client.open_by_key(st.secrets["gcp"]["sheet_id"])
+    """Return the Google Sheet workbook, retrying once on auth failure."""
+    try:
+        client = _get_client()
+        return client.open_by_key(st.secrets["gcp"]["sheet_id"])
+    except (gspread.exceptions.APIError, Exception):
+        # Clear the cached client (token may have expired) and retry
+        _get_client.clear()
+        client = _get_client()
+        return client.open_by_key(st.secrets["gcp"]["sheet_id"])
 
 
 def _ensure_headers(ws, headers: list[str]):
@@ -62,6 +68,7 @@ def _get_or_create_worksheet(sheet, title: str, headers: list[str]):
 
 # --- DailyLog ---
 
+@st.cache_data(ttl=60)
 def load_log() -> pd.DataFrame:
     """Read the DailyLog tab into a DataFrame."""
     sheet = _get_sheet()
@@ -97,6 +104,7 @@ def delete_entry(row_index: int):
 
 # --- FoodLibrary ---
 
+@st.cache_data(ttl=60)
 def load_food_library() -> pd.DataFrame:
     """Read the FoodLibrary tab into a DataFrame."""
     sheet = _get_sheet()
@@ -130,6 +138,7 @@ def delete_from_library(row_index: int):
 
 # --- BodyLog ---
 
+@st.cache_data(ttl=60)
 def load_body_log() -> pd.DataFrame:
     """Read the BodyLog tab into a DataFrame."""
     sheet = _get_sheet()

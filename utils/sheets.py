@@ -98,7 +98,7 @@ def delete_entry(row_index: int):
     """Delete a row from DailyLog by its 1-based sheet row index (header = row 1)."""
     sheet = _get_sheet()
     ws = _get_or_create_worksheet(sheet, "DailyLog", DAILY_LOG_HEADERS)
-    ws.delete_rows(row_index)
+    ws.delete_rows(int(row_index))
     load_log.clear()
 
 
@@ -132,7 +132,7 @@ def delete_from_library(row_index: int):
     """Delete a row from FoodLibrary by its 1-based sheet row index."""
     sheet = _get_sheet()
     ws = _get_or_create_worksheet(sheet, "FoodLibrary", FOOD_LIBRARY_HEADERS)
-    ws.delete_rows(row_index)
+    ws.delete_rows(int(row_index))
     load_food_library.clear()
 
 

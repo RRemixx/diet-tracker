@@ -368,7 +368,7 @@ with tab_library:
         with st.expander("Remove from Library"):
             del_food = st.selectbox("Select food to remove", lib_df["meal_name"].tolist(), key="del_food")
             if st.button("Delete", key="del_lib_btn"):
-                row_idx = lib_df[lib_df["meal_name"] == del_food].index[0]
+                row_idx = int(lib_df[lib_df["meal_name"] == del_food].index[0])
                 # +2 because: 0-indexed DataFrame + 1 for header row + 1 for 1-based sheets
                 delete_from_library(row_idx + 2)
                 st.success(f"Removed '{del_food}' from library.")

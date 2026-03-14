@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """
-Diet Tracker — Streamlit App
+Diet Tracker -- Streamlit App
 
 Log meals from Perplexity nutrition output, visualize trends, and track body composition.
 Data is stored persistently in Google Sheets.
@@ -26,7 +27,7 @@ from utils.charts import (
 # --- Page config ---
 st.set_page_config(
     page_title="Diet Tracker",
-    page_icon="🥗",
+    page_icon=":green_salad:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -34,14 +35,18 @@ st.set_page_config(
 # --- Custom CSS ---
 st.markdown("""
 <style>
+    /* Tighten spacing */
     .block-container { padding-top: 1.5rem; }
+    /* Progress bars */
     .stProgress > div > div > div > div {
         background-color: #3B82F6;
     }
+    /* Metric cards */
     [data-testid="stMetricValue"] {
         font-size: 1.8rem;
         font-weight: 700;
     }
+    /* Smaller sidebar width */
     [data-testid="stSidebar"] {
         min-width: 340px;
         max-width: 400px;
@@ -57,17 +62,17 @@ if "show_preview" not in st.session_state:
     st.session_state.show_preview = False
 
 
-# ==========================================
-#  SIDEBAR - Input Panel
-# ==========================================
+# =========================================
+#  SIDEBAR -- Input Panel
+# =========================================
 with st.sidebar:
-    st.title("🥗 Diet Tracker")
-    st.caption("Log meals • Track macros • See trends")
+    st.title(":green_salad: Diet Tracker")
+    st.caption("Log meals - Track macros - See trends")
 
     st.divider()
 
     # -- Settings (collapsible) --
-    with st.expander("⚙️ Goals & Settings", expanded=False):
+    with st.expander("Goals & Settings", expanded=False):
         calorie_goal = st.number_input("Daily Calorie Goal (kcal)", 500, 6000, 2000, step=50, key="cal_goal")
         protein_goal = st.number_input("Daily Protein Goal (g)", 10, 500, 150, step=5, key="prot_goal")
         fiber_goal = st.number_input("Daily Fiber Goal (g)", 5, 100, 30, step=1, key="fiber_goal")
@@ -75,7 +80,7 @@ with st.sidebar:
     st.divider()
 
     # -- Meal Input --
-    st.subheader("📝 Log a Meal")
+    st.subheader("Log a Meal")
 
     log_date = st.date_input("Date", value=datetime.date.today(), key="log_date")
     meal_type = st.selectbox("Meal Type", ["Breakfast", "Lunch", "Dinner", "Snack"], key="meal_type")
@@ -136,9 +141,9 @@ with st.sidebar:
                     st.session_state["meal_name"] = selected_food
 
                 st.markdown("**Selected:**")
-                st.markdown(f"Calories: **{parsed['calories']:.0f}** kcal  \u2022  "
-                            f"P: **{parsed['protein']:.0f}**g  \u2022  "
-                            f"F: **{parsed['total_fat']:.0f}**g  \u2022  "
+                st.markdown(f"Calories: **{parsed['calories']:.0f}** kcal | "
+                            f"P: **{parsed['protein']:.0f}**g | "
+                            f"F: **{parsed['total_fat']:.0f}**g | "
                             f"C: **{parsed['total_carbs']:.0f}**g")
 
     st.divider()
@@ -146,9 +151,9 @@ with st.sidebar:
     # -- Action buttons --
     col_save, col_lib = st.columns(2)
     with col_save:
-        save_clicked = st.button("💾 Save Entry", use_container_width=True, type="primary")
+        save_clicked = st.button("Save Entry", use_container_width=True, type="primary")
     with col_lib:
-        lib_clicked = st.button("📚 Save to Library", use_container_width=True)
+        lib_clicked = st.button("Save to Library", use_container_width=True)
 
     if save_clicked:
         nutrients = st.session_state.parsed_nutrients
@@ -163,7 +168,7 @@ with st.sidebar:
             entry.update(nutrients)
             try:
                 save_entry(entry)
-                st.success(f"\u2705 Saved {meal_type} for {log_date}")
+                st.success(f"Saved {meal_type} for {log_date}")
             except Exception as e:
                 st.error(f"Error saving: {e}")
 
@@ -179,31 +184,31 @@ with st.sidebar:
             entry.update(nutrients)
             try:
                 save_to_library(entry)
-                st.success(f"📚 Saved '{name}' to Food Library")
+                st.success(f"Saved '{name}' to Food Library")
             except Exception as e:
                 st.error(f"Error saving: {e}")
 
     st.divider()
 
     # -- Prompt template helper --
-    with st.expander("📋 Perplexity Prompt Template"):
+    with st.expander("Perplexity Prompt Template"):
         st.code(
             "Analyze this meal and return the nutrition in this exact format:\n\n"
             "Calories: X kcal | Protein: Xg | Total Fat: Xg | Saturated Fat: Xg |\n"
             "Trans Fat: Xg | Carbs: Xg | Fiber: Xg | Sugar: Xg | Added Sugar: Xg |\n"
             "Sodium: Xmg | Cholesterol: Xmg | Calcium: Xmg | Iron: Xmg |\n"
-            "Potassium: Xmg | Vitamin C: Xmg | Vitamin D: X\u00b5g | Magnesium: Xmg |\n"
+            "Potassium: Xmg | Vitamin C: Xmg | Vitamin D: Xug | Magnesium: Xmg |\n"
             "Zinc: Xmg\n\n"
             "If a value is unknown, write 0.",
             language="text",
         )
 
 
-# ==========================================
-#  MAIN PANEL - Tabs
-# ==========================================
+# =========================================
+#  MAIN PANEL -- Tabs
+# =========================================
 
-tab_today, tab_trends, tab_library, tab_body = st.tabs(["📊 Today", "📈 Trends", "📚 Food Library", "🏋\ufe0f Body Log"])
+tab_today, tab_trends, tab_library, tab_body = st.tabs(["Today", "Trends", "Food Library", "Body Log"])
 
 
 # --- TAB 1: TODAY ---
@@ -216,6 +221,7 @@ with tab_today:
     else:
         today_df = log_df[log_df["date"] == today_str]
 
+    # Daily totals
     st.subheader(f"Summary for {log_date.strftime('%A, %b %d')}")
 
     if today_df.empty:
@@ -227,12 +233,14 @@ with tab_today:
         total_carbs = today_df["total_carbs"].sum()
         total_fiber = today_df["fiber"].sum()
 
+        # Metric cards
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Calories", f"{total_cal:.0f} kcal")
         m2.metric("Protein", f"{total_prot:.0f} g")
         m3.metric("Fat", f"{total_fat:.0f} g")
         m4.metric("Carbs", f"{total_carbs:.0f} g")
 
+        # Progress bars
         st.markdown("**Goal Progress**")
         p1, p2, p3 = st.columns(3)
         with p1:
@@ -248,13 +256,14 @@ with tab_today:
             st.caption(f"Fiber: {total_fiber:.0f}g / {fiber_goal}g")
             st.progress(fib_pct)
 
+        # Today's meal list
         st.markdown("---")
         st.markdown("**Meals Logged**")
         for idx, row in today_df.iterrows():
             with st.container():
                 c1, c2, c3, c4, c5 = st.columns([1.5, 2.5, 1.2, 1.2, 1.2])
                 c1.markdown(f"**{row.get('meal_type', '')}**")
-                c2.markdown(row.get("meal_name", "\u2014"))
+                c2.markdown(row.get("meal_name", "-"))
                 c3.markdown(f"{row['calories']:.0f} kcal")
                 c4.markdown(f"P: {row['protein']:.0f}g")
                 c5.markdown(f"F: {row['total_fat']:.0f}g  C: {row['total_carbs']:.0f}g")
@@ -288,11 +297,12 @@ with tab_trends:
             st.subheader("Nutrient Profile")
             st.plotly_chart(macro_radar(log_df), use_container_width=True)
 
+        # CSV export
         st.divider()
         st.subheader("Export Data")
         csv_data = log_df.to_csv(index=False)
         st.download_button(
-            label="\ud83d\udce5 Download Full Log (CSV)",
+            label="Download Full Log (CSV)",
             data=csv_data,
             file_name=f"diet_log_{datetime.date.today()}.csv",
             mime="text/csv",
@@ -307,11 +317,13 @@ with tab_library:
     if lib_df.empty:
         st.info("Your food library is empty. Save meals from the sidebar to build your library.")
     else:
+        # Display table
         display_cols = ["meal_name", "calories", "protein", "total_fat", "total_carbs", "fiber"]
         display_df = lib_df[display_cols].copy()
         display_df.columns = ["Meal", "Calories", "Protein (g)", "Fat (g)", "Carbs (g)", "Fiber (g)"]
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
+        # Quick-log from library
         st.markdown("---")
         st.markdown("**Quick Log from Library**")
         qc1, qc2, qc3, qc4 = st.columns([3, 1.5, 1.5, 1.5])
@@ -322,7 +334,7 @@ with tab_library:
         with qc3:
             quick_meal = st.selectbox("Meal", ["Breakfast", "Lunch", "Dinner", "Snack"], key="quick_meal")
         with qc4:
-            if st.button("\u26a1 Quick Log", use_container_width=True, key="quick_log_btn"):
+            if st.button("Quick Log", use_container_width=True, key="quick_log_btn"):
                 food_row = lib_df[lib_df["meal_name"] == quick_food].iloc[0]
                 entry = {
                     "date": str(quick_date),
@@ -333,14 +345,16 @@ with tab_library:
                     entry[f] = float(food_row.get(f, 0))
                 try:
                     save_entry(entry)
-                    st.success(f"\u2705 Logged '{quick_food}' for {quick_date}")
+                    st.success(f"Logged '{quick_food}' for {quick_date}")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-        with st.expander("\ud83d\uddd1\ufe0f Remove from Library"):
+        # Delete from library
+        with st.expander("Remove from Library"):
             del_food = st.selectbox("Select food to remove", lib_df["meal_name"].tolist(), key="del_food")
             if st.button("Delete", key="del_lib_btn"):
                 row_idx = lib_df[lib_df["meal_name"] == del_food].index[0]
+                # +2 because: 0-indexed DataFrame + 1 for header row + 1 for 1-based sheets
                 delete_from_library(row_idx + 2)
                 st.success(f"Removed '{del_food}' from library.")
                 st.rerun()
@@ -358,7 +372,7 @@ with tab_body:
         body_weight = st.number_input("Weight (kg)", 30.0, 250.0, step=0.1, value=70.0, key="body_weight")
         body_fat = st.number_input("Body Fat % (optional)", 0.0, 60.0, step=0.1, value=0.0, key="body_fat")
 
-        if st.button("\ud83d\udcbe Save Body Entry", use_container_width=True, key="save_body"):
+        if st.button("Save Body Entry", use_container_width=True, key="save_body"):
             entry = {
                 "date": str(body_date),
                 "weight_kg": body_weight,
@@ -366,7 +380,7 @@ with tab_body:
             }
             try:
                 save_body_entry(entry)
-                st.success(f"\u2705 Saved body data for {body_date}")
+                st.success(f"Saved body data for {body_date}")
             except Exception as e:
                 st.error(f"Error: {e}")
 
@@ -378,6 +392,7 @@ with tab_body:
             st.plotly_chart(body_weight_chart(body_df), use_container_width=True)
             st.plotly_chart(body_fat_chart(body_df), use_container_width=True)
 
+            # Display recent entries
             st.markdown("**Recent Entries**")
             recent = body_df.sort_values("date", ascending=False).head(10)
             display_body = recent[["date", "weight_kg", "body_fat_pct"]].copy()

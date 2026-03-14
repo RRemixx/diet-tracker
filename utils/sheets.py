@@ -46,6 +46,7 @@ def _ensure_headers(ws, headers: list[str]):
     else:
         existing = ws.row_values(1)
         if existing != headers:
+            # Update headers if they don't match (schema evolution)
             ws.update("A1", [headers], value_input_option="RAW")
 
 
@@ -69,6 +70,7 @@ def load_log() -> pd.DataFrame:
     if not data:
         return pd.DataFrame(columns=DAILY_LOG_HEADERS)
     df = pd.DataFrame(data)
+    # Ensure numeric columns
     for col in ALL_FIELDS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
@@ -76,16 +78,17 @@ def load_log() -> pd.DataFrame:
 
 
 def save_entry(row: dict):
-    """Append a new entry to DailyLog."""
+    """Append a new entry to DailyLog. `row` must have keys matching DAILY_LOG_HEADERS."""
     sheet = _get_sheet()
     ws = _get_or_create_worksheet(sheet, "DailyLog", DAILY_LOG_HEADERS)
     values = [row.get(h, 0) for h in DAILY_LOG_HEADERS]
     ws.append_row(values, value_input_option="USER_ENTERED")
+    # Clear cached data so next load picks up new entry
     load_log.clear()
 
 
 def delete_entry(row_index: int):
-    """Delete a row from DailyLog by its 1-based sheet row index."""
+    """Delete a row from DailyLog by its 1-based sheet row index (header = row 1)."""
     sheet = _get_sheet()
     ws = _get_or_create_worksheet(sheet, "DailyLog", DAILY_LOG_HEADERS)
     ws.delete_rows(row_index)

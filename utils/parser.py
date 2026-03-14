@@ -2,21 +2,21 @@
 Regex-based parser for Perplexity nutrition output.
 
 Handles pipe-separated, comma-separated, newline-separated, and mixed formats.
-Returns a flat dict with all recognized nutrition fields (missing → 0).
+Returns a flat dict with all recognized nutrition fields (missing -> 0).
 """
 
 import re
 from typing import Dict
 
-# Canonical field names → (aliases for matching, unit suffix for regex)
+# Canonical field names -> (aliases for matching, unit suffix for regex)
 FIELD_SPEC: list[tuple[str, list[str], str]] = [
     # Tier 1
     ("calories",        ["calories", "cals", "energy", "cal"],                      r"kcal|cal"),
     ("protein",         ["protein", "prot"],                                         r"g"),
     ("total_fat",       ["total fat", "fat"],                                        r"g"),
-    ("saturated_fat",   ["saturated fat", "sat fat", "sat\.? fat"],                 r"g"),
+    ("saturated_fat",   ["saturated fat", "sat fat", "sat\\.? fat"],                 r"g"),
     ("trans_fat",       ["trans fat"],                                                r"g"),
-    ("unsaturated_fat", ["unsaturated fat", "unsat fat", "unsat\.? fat", "mono\+poly", "monounsaturated fat", "polyunsaturated fat"],  r"g"),
+    ("unsaturated_fat", ["unsaturated fat", "unsat fat", "unsat\\.? fat", "mono\\+poly", "monounsaturated fat", "polyunsaturated fat"],  r"g"),
     ("total_carbs",     ["total carbohydrates", "total carbs", "carbohydrates", "carbs", "carb"],  r"g"),
     ("fiber",           ["fiber", "fibre", "dietary fiber"],                         r"g"),
     ("sugar",           ["sugar", "sugars", "total sugar", "total sugars"],          r"g"),
@@ -28,27 +28,27 @@ FIELD_SPEC: list[tuple[str, list[str], str]] = [
     ("calcium",         ["calcium", "ca"],                                           r"mg"),
     ("iron",            ["iron", "fe"],                                              r"mg"),
     ("potassium",       ["potassium", "k"],                                          r"mg"),
-    ("vitamin_c",       ["vitamin c", "vit c", "vit\.? c"],                         r"mg"),
-    ("vitamin_d",       ["vitamin d", "vit d", "vit\.? d"],                         r"[µu]g|mcg|iu"),
-    ("magnesium",       ["magnesium", "mg(?=\s*:)"],                                r"mg"),
+    ("vitamin_c",       ["vitamin c", "vit c", "vit\\.? c"],                         r"mg"),
+    ("vitamin_d",       ["vitamin d", "vit d", "vit\\.? d"],                         r"[\u00b5u]g|mcg|iu"),
+    ("magnesium",       ["magnesium", "mg(?=\\s*:)"],                                r"mg"),
     ("zinc",            ["zinc", "zn"],                                              r"mg"),
     ("phosphorus",      ["phosphorus", "phos"],                                      r"mg"),
 
     # Tier 3
-    ("vitamin_a",       ["vitamin a", "vit a", "vit\.? a"],                         r"[µu]g(?:\s*rae)?|mcg|iu"),
-    ("vitamin_e",       ["vitamin e", "vit e", "vit\.? e"],                         r"mg"),
-    ("vitamin_k",       ["vitamin k", "vit k", "vit\.? k"],                         r"[µu]g|mcg"),
+    ("vitamin_a",       ["vitamin a", "vit a", "vit\\.? a"],                         r"[\u00b5u]g(?:\\s*rae)?|mcg|iu"),
+    ("vitamin_e",       ["vitamin e", "vit e", "vit\\.? e"],                         r"mg"),
+    ("vitamin_k",       ["vitamin k", "vit k", "vit\\.? k"],                         r"[\u00b5u]g|mcg"),
     ("vitamin_b1",      ["vitamin b1", "thiamine", "b1"],                            r"mg"),
     ("vitamin_b2",      ["vitamin b2", "riboflavin", "b2"],                          r"mg"),
     ("vitamin_b3",      ["vitamin b3", "niacin", "b3"],                              r"mg"),
     ("vitamin_b6",      ["vitamin b6", "pyridoxine", "b6"],                          r"mg"),
-    ("vitamin_b12",     ["vitamin b12", "cobalamin", "b12"],                         r"[µu]g|mcg"),
-    ("folate",          ["folate", "folic acid", "vitamin b9", "b9"],                r"[µu]g(?:\s*dfe)?|mcg"),
-    ("selenium",        ["selenium", "se"],                                          r"[µu]g|mcg"),
-    ("copper",          ["copper", "cu"],                                            r"[µu]g|mcg|mg"),
+    ("vitamin_b12",     ["vitamin b12", "cobalamin", "b12"],                         r"[\u00b5u]g|mcg"),
+    ("folate",          ["folate", "folic acid", "vitamin b9", "b9"],                r"[\u00b5u]g(?:\\s*dfe)?|mcg"),
+    ("selenium",        ["selenium", "se"],                                          r"[\u00b5u]g|mcg"),
+    ("copper",          ["copper", "cu"],                                            r"[\u00b5u]g|mcg|mg"),
     ("manganese",       ["manganese", "mn"],                                         r"mg"),
-    ("iodine",          ["iodine"],                                                  r"[µu]g|mcg"),
-    ("chromium",        ["chromium", "cr"],                                          r"[µu]g|mcg"),
+    ("iodine",          ["iodine"],                                                  r"[\u00b5u]g|mcg"),
+    ("chromium",        ["chromium", "cr"],                                          r"[\u00b5u]g|mcg"),
     ("caffeine",        ["caffeine"],                                                r"mg"),
     ("water",           ["water"],                                                   r"ml|g"),
 ]
@@ -89,13 +89,13 @@ UNITS: Dict[str, str] = {
     "total_carbs": "g", "fiber": "g", "sugar": "g", "added_sugar": "g",
     "sodium": "mg", "cholesterol": "mg",
     "calcium": "mg", "iron": "mg", "potassium": "mg",
-    "vitamin_c": "mg", "vitamin_d": "µg", "magnesium": "mg",
+    "vitamin_c": "mg", "vitamin_d": "ug", "magnesium": "mg",
     "zinc": "mg", "phosphorus": "mg",
-    "vitamin_a": "µg RAE", "vitamin_e": "mg", "vitamin_k": "µg",
+    "vitamin_a": "ug RAE", "vitamin_e": "mg", "vitamin_k": "ug",
     "vitamin_b1": "mg", "vitamin_b2": "mg", "vitamin_b3": "mg",
-    "vitamin_b6": "mg", "vitamin_b12": "µg", "folate": "µg DFE",
-    "selenium": "µg", "copper": "µg", "manganese": "mg",
-    "iodine": "µg", "chromium": "µg", "caffeine": "mg", "water": "ml",
+    "vitamin_b6": "mg", "vitamin_b12": "ug", "folate": "ug DFE",
+    "selenium": "ug", "copper": "ug", "manganese": "mg",
+    "iodine": "ug", "chromium": "ug", "caffeine": "mg", "water": "ml",
 }
 
 TIER1_FIELDS = [
@@ -120,7 +120,7 @@ ALL_FIELDS = TIER1_FIELDS + TIER2_FIELDS + TIER3_FIELDS
 
 def parse_nutrition(text: str) -> Dict[str, float]:
     """
-    Parse a Perplexity nutrition output string and return a dict of field → value.
+    Parse a Perplexity nutrition output string and return a dict of field -> value.
     Missing fields default to 0.
     """
     result: Dict[str, float] = {f: 0.0 for f in ALL_FIELDS}
@@ -148,6 +148,6 @@ def extract_food_name(text: str) -> str:
     if re.search(r":\s*\d", first):
         return ""
     # Clean up markdown bold, bullets, etc.
-    name = re.sub(r"[*#\-•]+", "", first).strip()
+    name = re.sub(r"[*#\-\u2022]+", "", first).strip()
     # Truncate if too long
     return name[:100] if name else ""

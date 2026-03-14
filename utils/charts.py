@@ -8,15 +8,15 @@ import plotly.express as px
 
 # --- Color palette ---
 COLORS = {
-    "calories": "#F97316",
-    "protein": "#3B82F6",
-    "total_fat": "#EAB308",
-    "total_carbs": "#10B981",
-    "fiber": "#8B5CF6",
-    "sugar": "#EC4899",
-    "sodium": "#6366F1",
-    "potassium": "#14B8A6",
-    "goal": "#94A3B8",
+    "calories": "#F97316",    # orange
+    "protein": "#3B82F6",     # blue
+    "total_fat": "#EAB308",   # yellow
+    "total_carbs": "#10B981", # green
+    "fiber": "#8B5CF6",       # purple
+    "sugar": "#EC4899",       # pink
+    "sodium": "#6366F1",      # indigo
+    "potassium": "#14B8A6",   # teal
+    "goal": "#94A3B8",        # slate (goal line)
 }
 
 LAYOUT_DEFAULTS = dict(
@@ -34,7 +34,7 @@ def daily_calorie_bar(df: pd.DataFrame, calorie_goal: float = 2000) -> go.Figure
         return _empty_chart("No data yet")
 
     daily = df.groupby("date")["calories"].sum().reset_index()
-    daily = daily.sort_values("date").tail(14)
+    daily = daily.sort_values("date").tail(14)  # last 14 days
 
     fig = go.Figure()
     fig.add_trace(go.Bar(

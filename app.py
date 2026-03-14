@@ -60,6 +60,13 @@ if "parsed_nutrients" not in st.session_state:
     st.session_state.parsed_nutrients = None
 if "form_counter" not in st.session_state:
     st.session_state.form_counter = 0
+if "save_success" not in st.session_state:
+    st.session_state.save_success = None
+
+# Show success toast from previous save (survives rerun)
+if st.session_state.save_success:
+    st.toast(st.session_state.save_success, icon=":white_check_mark:")
+    st.session_state.save_success = None
 
 
 def _clear_form():
@@ -190,7 +197,7 @@ with st.sidebar:
                     existing_lib = load_food_library()
                     if existing_lib.empty or current_meal_name not in existing_lib["meal_name"].values:
                         save_to_library(lib_entry)
-                st.success(f"Saved {meal_type} for {log_date}")
+                st.session_state.save_success = f"Saved {meal_type} for {log_date}"
                 _clear_form()
                 st.rerun()
             except Exception as e:

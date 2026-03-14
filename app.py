@@ -35,8 +35,8 @@ st.set_page_config(
 # --- Custom CSS ---
 st.markdown("""
 <style>
-    /* Tighten spacing */
-    .block-container { padding-top: 1.5rem; }
+    /* Tighten spacing while clearing the fixed header */
+    .block-container { padding-top: 3rem; }
     /* Progress bars */
     .stProgress > div > div > div > div {
         background-color: #3B82F6;

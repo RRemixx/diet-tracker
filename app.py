@@ -58,8 +58,18 @@ st.markdown("""
 # --- Initialize session state ---
 if "parsed_nutrients" not in st.session_state:
     st.session_state.parsed_nutrients = None
-if "show_preview" not in st.session_state:
-    st.session_state.show_preview = False
+if "form_counter" not in st.session_state:
+    st.session_state.form_counter = 0
+
+
+def _clear_form():
+    """Increment counter to reset keyed widgets and clear parsed data."""
+    st.session_state.form_counter += 1
+    st.session_state.parsed_nutrients = None
+
+
+# Prefix for dynamic widget keys so they reset when counter changes
+_k = str(st.session_state.form_counter)
 
 
 # =========================================
@@ -83,19 +93,22 @@ with st.sidebar:
     st.subheader("Log a Meal")
 
     log_date = st.date_input("Date", value=datetime.date.today(), key="log_date")
-    meal_type = st.selectbox("Meal Type", ["Breakfast", "Lunch", "Dinner", "Snack"], key="meal_type")
-    meal_name = st.text_input("Meal Name (optional)", key="meal_name", placeholder="e.g. Chicken stir-fry")
+    meal_type = st.selectbox("Meal Type", ["Breakfast", "Lunch", "Dinner", "Snack"], key=f"meal_type_{_k}")
+    meal_name = st.text_input("Meal Name (optional)", key=f"meal_name_{_k}", placeholder="e.g. Chicken stir-fry")
 
     # -- Source selector: paste or food library --
-    input_mode = st.radio("Input Source", ["Paste from Perplexity", "Food Library"], horizontal=True, key="input_mode")
+    input_mode = st.radio("Input Source", ["Paste from Perplexity", "Food Library"], horizontal=True, key=f"input_mode_{_k}")
 
     if input_mode == "Paste from Perplexity":
         raw_text = st.text_area(
             "Paste Perplexity Output",
             height=160,
-            key="raw_text",
+            key=f"raw_text_{_k}",
             placeholder="Calories: 450 kcal | Protein: 35g | Total Fat: 15g | ...",
         )
+
+        # Parse button for mobile (no keyboard Enter key)
+        parse_clicked = st.button("Parse Nutrition", use_container_width=True, key=f"parse_btn_{_k}")
 
         if raw_text.strip():
             parsed = parse_nutrition(raw_text)
@@ -105,7 +118,8 @@ with st.sidebar:
             if not meal_name:
                 auto_name = extract_food_name(raw_text)
                 if auto_name:
-                    st.session_state["meal_name"] = auto_name
+                    st.session_state[f"meal_name_{_k}"] = auto_name
+                    meal_name = auto_name
 
             # Preview
             st.markdown("**Parsed Preview:**")
@@ -132,13 +146,14 @@ with st.sidebar:
             st.session_state.parsed_nutrients = None
         else:
             food_options = lib_df["meal_name"].tolist()
-            selected_food = st.selectbox("Select from Library", food_options, key="lib_select")
+            selected_food = st.selectbox("Select from Library", food_options, key=f"lib_select_{_k}")
             if selected_food:
                 row = lib_df[lib_df["meal_name"] == selected_food].iloc[0]
                 parsed = {f: float(row.get(f, 0)) for f in ALL_FIELDS}
                 st.session_state.parsed_nutrients = parsed
                 if not meal_name:
-                    st.session_state["meal_name"] = selected_food
+                    st.session_state[f"meal_name_{_k}"] = selected_food
+                    meal_name = selected_food
 
                 st.markdown("**Selected:**")
                 st.markdown(f"Calories: **{parsed['calories']:.0f}** kcal | "
@@ -148,43 +163,36 @@ with st.sidebar:
 
     st.divider()
 
-    # -- Action buttons --
-    col_save, col_lib = st.columns(2)
-    with col_save:
-        save_clicked = st.button("Save Entry", use_container_width=True, type="primary")
-    with col_lib:
-        lib_clicked = st.button("Save to Library", use_container_width=True)
+    # -- Save options --
+    also_save_to_lib = st.checkbox("Also save to Food Library", value=True, key=f"also_lib_{_k}")
+
+    save_clicked = st.button("Save Entry", use_container_width=True, type="primary", key=f"save_btn_{_k}")
 
     if save_clicked:
         nutrients = st.session_state.parsed_nutrients
+        current_meal_name = meal_name.strip() if meal_name else ""
         if nutrients is None:
             st.error("Nothing to save. Paste nutrition data or select from library.")
         else:
             entry = {
                 "date": str(log_date),
                 "meal_type": meal_type,
-                "meal_name": st.session_state.get("meal_name", ""),
+                "meal_name": current_meal_name,
             }
             entry.update(nutrients)
             try:
                 save_entry(entry)
+                # Also save to library if checked and meal has a name
+                if also_save_to_lib and current_meal_name:
+                    lib_entry = {"meal_name": current_meal_name}
+                    lib_entry.update(nutrients)
+                    # Check if already in library to avoid duplicates
+                    existing_lib = load_food_library()
+                    if existing_lib.empty or current_meal_name not in existing_lib["meal_name"].values:
+                        save_to_library(lib_entry)
                 st.success(f"Saved {meal_type} for {log_date}")
-            except Exception as e:
-                st.error(f"Error saving: {e}")
-
-    if lib_clicked:
-        nutrients = st.session_state.parsed_nutrients
-        name = st.session_state.get("meal_name", "").strip()
-        if nutrients is None:
-            st.error("Nothing to save. Parse a meal first.")
-        elif not name:
-            st.error("Please enter a meal name to save to library.")
-        else:
-            entry = {"meal_name": name}
-            entry.update(nutrients)
-            try:
-                save_to_library(entry)
-                st.success(f"Saved '{name}' to Food Library")
+                _clear_form()
+                st.rerun()
             except Exception as e:
                 st.error(f"Error saving: {e}")
 
@@ -288,7 +296,7 @@ with tab_trends:
             selected_micros = st.multiselect(
                 "Select nutrients to plot",
                 options=[f for f in TIER2_FIELDS + TIER3_FIELDS],
-                default=["fiber", "sodium", "potassium"],
+                default=["calcium", "iron", "potassium"],
                 format_func=lambda x: DISPLAY_NAMES.get(x, x),
             )
             if selected_micros:

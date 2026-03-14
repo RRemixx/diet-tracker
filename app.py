@@ -103,6 +103,9 @@ with st.sidebar:
     meal_type = st.selectbox("Meal Type", ["Breakfast", "Lunch", "Dinner", "Snack"], key=f"meal_type_{_k}")
     meal_name = st.text_input("Meal Name (optional)", key=f"meal_name_{_k}", placeholder="e.g. Chicken stir-fry")
 
+    # Inferred name from parser or library (used at save time if meal_name is blank)
+    _inferred_name = ""
+
     # -- Source selector: paste or food library --
     input_mode = st.radio("Input Source", ["Paste from Perplexity", "Food Library"], horizontal=True, key=f"input_mode_{_k}")
 
@@ -121,15 +124,15 @@ with st.sidebar:
             parsed = parse_nutrition(raw_text)
             st.session_state.parsed_nutrients = parsed
 
-            # Auto-fill meal name if empty
-            if not meal_name:
-                auto_name = extract_food_name(raw_text)
-                if auto_name:
-                    st.session_state[f"meal_name_{_k}"] = auto_name
-                    meal_name = auto_name
+            # Detect food name from text (used as fallback at save time)
+            auto_name = extract_food_name(raw_text)
+            if auto_name:
+                _inferred_name = auto_name
 
             # Preview
             st.markdown("**Parsed Preview:**")
+            if _inferred_name and not meal_name:
+                st.caption(f"Detected: {_inferred_name}")
             preview_cols = st.columns(3)
             for i, field in enumerate(TIER1_FIELDS):
                 val = parsed[field]
@@ -158,9 +161,7 @@ with st.sidebar:
                 row = lib_df[lib_df["meal_name"] == selected_food].iloc[0]
                 parsed = {f: float(row.get(f, 0)) for f in ALL_FIELDS}
                 st.session_state.parsed_nutrients = parsed
-                if not meal_name:
-                    st.session_state[f"meal_name_{_k}"] = selected_food
-                    meal_name = selected_food
+                _inferred_name = selected_food
 
                 st.markdown("**Selected:**")
                 st.markdown(f"Calories: **{parsed['calories']:.0f}** kcal | "
@@ -177,7 +178,8 @@ with st.sidebar:
 
     if save_clicked:
         nutrients = st.session_state.parsed_nutrients
-        current_meal_name = meal_name.strip() if meal_name else ""
+        # Use typed name, fall back to inferred name from parser/library
+        current_meal_name = meal_name.strip() if meal_name.strip() else _inferred_name
         if nutrients is None:
             st.error("Nothing to save. Paste nutrition data or select from library.")
         else:

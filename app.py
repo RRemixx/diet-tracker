@@ -65,7 +65,7 @@ if "save_success" not in st.session_state:
 
 # Show success toast from previous save (survives rerun)
 if st.session_state.save_success:
-    st.toast(st.session_state.save_success, icon=":white_check_mark:")
+    st.toast(st.session_state.save_success)
     st.session_state.save_success = None
 
 
@@ -291,7 +291,6 @@ with tab_today:
                              help="Delete this entry"):
                     try:
                         delete_entry(sheet_row)
-                        st.toast("Entry deleted", icon=":white_check_mark:")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error deleting: {e}")

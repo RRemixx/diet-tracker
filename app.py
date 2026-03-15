@@ -278,12 +278,23 @@ with tab_today:
         st.markdown("**Meals Logged**")
         for idx, row in today_df.iterrows():
             with st.container():
-                c1, c2, c3, c4, c5 = st.columns([1.5, 2.5, 1.2, 1.2, 1.2])
+                c1, c2, c3, c4, c5, c6 = st.columns([1.3, 2.2, 1.1, 1.1, 1.1, 0.5])
                 c1.markdown(f"**{row.get('meal_type', '')}**")
                 c2.markdown(row.get("meal_name", "-"))
                 c3.markdown(f"{row['calories']:.0f} kcal")
                 c4.markdown(f"P: {row['protein']:.0f}g")
                 c5.markdown(f"F: {row['total_fat']:.0f}g  C: {row['total_carbs']:.0f}g")
+                # idx is the DataFrame index in the full log_df;
+                # sheet row = idx + 2 (1-based, header on row 1)
+                sheet_row = int(idx) + 2
+                if c6.button(":wastebasket:", key=f"del_entry_{sheet_row}",
+                             help="Delete this entry"):
+                    try:
+                        delete_entry(sheet_row)
+                        st.toast("Entry deleted", icon=":white_check_mark:")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error deleting: {e}")
 
 
 # --- TAB 2: TRENDS ---
